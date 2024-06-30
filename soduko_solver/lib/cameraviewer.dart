@@ -46,28 +46,31 @@ class _CameraViewerState extends State<CameraViewer> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.primary,
-              width: 5,
+        Card(
+          elevation: 15,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary,
+                width: 5,
+              ),
             ),
+            child: SizedBox(
+                height: screenWidth - 50,
+                width: screenWidth - 50,
+                child: FutureBuilder<void>(
+                  future: _initializeControllerFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.done) {
+                      // If the Future is complete, display the preview.
+                      return CameraPreview(_controller);
+                    } else {
+                      // Otherwise, display a loading indicator.
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                  },
+                )),
           ),
-          child: SizedBox(
-              height: screenWidth - 50, // specify the height
-              width: screenWidth - 50,
-              child: FutureBuilder<void>(
-                future: _initializeControllerFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    // If the Future is complete, display the preview.
-                    return CameraPreview(_controller);
-                  } else {
-                    // Otherwise, display a loading indicator.
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                },
-              )),
         ),
         const SizedBox(height: 15),
         FloatingActionButton(
@@ -80,13 +83,15 @@ class _CameraViewerState extends State<CameraViewer> {
               if (!context.mounted) return;
 
               Future<String> apiRequestFuture = () async {
-                var request =
-                    http.MultipartRequest('POST', Uri.parse('inserturl here'));
+                var request = http.MultipartRequest(
+                    'POST', Uri.parse('http://10.0.2.2:5000'));
                 request.files.add(
                     await http.MultipartFile.fromPath('image', image.path));
                 var res =
                     await request.send().timeout(const Duration(seconds: 10));
                 var responseData = await http.Response.fromStream(res);
+                print(responseData.body);
+                print(responseData.statusCode);
                 return responseData.body;
               }()
                   .timeout(const Duration(seconds: 10));
@@ -108,6 +113,7 @@ class _CameraViewerState extends State<CameraViewer> {
                 ),
               );
             } catch (e) {
+              print(e);
               return;
             }
           },
@@ -118,7 +124,6 @@ class _CameraViewerState extends State<CameraViewer> {
   }
 }
 
-// A widget that displays the picture taken by the user.
 class DisplayPictureScreen extends StatelessWidget {
   final String responseData;
 
@@ -127,15 +132,15 @@ class DisplayPictureScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Solution"),
-        titleTextStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onPrimary,
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
+        appBar: AppBar(
+          title: const Text("Solution"),
+          titleTextStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onPrimary,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+          backgroundColor: Theme.of(context).colorScheme.background,
         ),
-        backgroundColor: Theme.of(context).colorScheme.background,
-      ),
-    );
+        body: Text(responseData));
   }
 }

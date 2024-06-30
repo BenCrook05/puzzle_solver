@@ -1,4 +1,3 @@
-
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'cameraviewer.dart';
@@ -12,7 +11,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -134,10 +132,12 @@ class _MyHomePageState extends State<MyHomePage> {
               height: 15,
             ),
             _selector,
-            const SizedBox(height: 15,),
+            const SizedBox(
+              height: 15,
+            ),
             Text(
               'Take a picture of the puzzle to solve:',
-              style: TextStyle( 
+              style: TextStyle(
                 color: Theme.of(context).colorScheme.onSecondary,
                 fontSize: 14,
               ),
@@ -152,8 +152,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const CircularProgressIndicator(); // show loading spinner while waiting
                 } else if (snapshot.hasError) {
-                  return Text(
-                      'Error: ${snapshot.error}'); // show error message if any error occurred
+                  return Text('Error: ${snapshot.error}');
                 } else {
                   return snapshot.data ??
                       Container(); // show CameraViewer when data is available, otherwise return a placeholder widget
