@@ -7,8 +7,6 @@ import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms.v2 as transforms
-import torchvision.transforms.functional as F
-import matplotlib.pyplot as plt
 
 #suppress warnings
 import torch._dynamo
