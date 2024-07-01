@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+# from matplotlib import pyplot as plt
 
 
 def preprocess_image(image):
@@ -9,14 +9,20 @@ def preprocess_image(image):
     return grey
 
 
-def detect_gridlines(image, threshold=80):
+def detect_gridlines(image, threshold=150):
     
     edges = cv2.Canny(image, threshold, threshold*2, apertureSize=3)
     kernel = np.ones((3,3),np.uint8)
     edges = cv2.dilate(edges,kernel,iterations = 2)
     kernel = np.ones((5,5),np.uint8)
     edges = cv2.erode(edges,kernel,iterations = 1)
-    lines = cv2.HoughLines(edges, 1, np.pi/180, 250, 100)
+    lines = cv2.HoughLines(edges, 1, np.pi/180, 250, threshold)
+    # lines_predictive = cv2.HoughLinesP(edges, 1, np.pi/180, 100, minLineLength=300, maxLineGap=10)
+    
+    
+    # #only want to consider lines present in both lines and lines_predictive
+    # lines_predictive = list(map(lambda x: x[0], lines_predictive))
+    # lines = list(filter(lambda x: x[0][0] in list(map(lambda x: x[0], lines_predictive)), lines))
     
     
     grid_lines = []
@@ -26,8 +32,6 @@ def detect_gridlines(image, threshold=80):
         rho,theta = line[0]
         a = np.cos(theta)
         b = np.sin(theta)
-        #print(f"Theta: {round(theta, 5)}, a: {round(a, 3)}, b: {round(b,3)}")
-        #print(f"Rho: {round(rho, 3)}")
         if abs(a) > 0.999 or abs(b) > 0.999:
             grid_lines.append(line)
 
@@ -72,7 +76,6 @@ def detect_gridlines(image, threshold=80):
         similar_lines = unique_similar_lines[i] + [i]
         rho = sum([grid_lines[j][0][0] for j in similar_lines]) / len(similar_lines)
         theta = sum([grid_lines[j][0][1] for j in similar_lines]) / len(similar_lines)
-        # rho,theta = line[0]
         a = np.cos(theta)
         b = np.sin(theta)
         x0 = a*rho
@@ -82,6 +85,7 @@ def detect_gridlines(image, threshold=80):
         x2 = int(x0 - 1000*(-b))
         y2 = int(y0 - 1000*(a))
         proper_lines.append([[x1,y1,x2,y2],0])
+    
     
     #print("Proper lines: ", len(proper_lines))
     return proper_lines      
@@ -106,7 +110,6 @@ def find_intersection(lines):
                 y = ((x1*y2-y1*x2)*(y3-y4) - (y1-y2)*(x3*y4-y3*x4)) / det
                 #check if intersection is within the image
                 if 0 <= x < 500 and 0 <= y < 500:
-                    #print("Intersection: ", x, y)
                     intersections.append((x, y))
                 
     #remove similar intersections
@@ -178,19 +181,15 @@ def crop_cells(image, intersections, grid_size):
             #crop the cell
             cell = image[int(y_min + (y_diff * CROP_FACTOR)):int(y_max - (y_diff * CROP_FACTOR)), 
                          int(x_min + (x_diff * CROP_FACTOR)):int(x_max - (x_diff * CROP_FACTOR))]
-            #print("\ncell created , ", cell.shape)
-            #print("x_min: ", int(x_min), "x_max: ", int(x_max), "y_min: ", int(y_min), "y_max: ", int(y_max))
-            #print(f"i: {i}, j: {j}")
 
             
             #perform check to ensure cell is valid
             if cell.shape[0] < 10 or cell.shape[1] < 10:
-                #print("cell too small")
                 continue
             
             
             row.append(cell)
-
+        
             
         cells.append(row)
         
@@ -230,9 +229,13 @@ def get_cells_from_image_grid(image, grid_size):
     cells = crop_cells(image, intersections, grid_size+1)
     #print("Cells divided: ", len(cells))
     
-    if len(cells) != grid_size**2:
-        raise ValueError("Error in cell division")
+    if len(cells) != grid_size:
+        raise ValueError()
+    for row in cells:
+        if len(row) != grid_size:
+            raise ValueError()
     
     return cells
     
+
 
