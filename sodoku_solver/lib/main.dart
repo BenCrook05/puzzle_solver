@@ -1,9 +1,18 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:camera/camera.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'cameraviewer.dart';
+import 'package:flutter/widgets.dart';
+import 'package:path_provider/path_provider.dart';
 import 'dart:async';
 
-void main() {
+import 'package:soduko_solver/cameraviewer.dart';
+import 'package:soduko_solver/gridviewdisplay.dart';
+import 'package:soduko_solver/typeselector.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
@@ -26,6 +35,7 @@ class MyApp extends StatelessWidget {
             onSecondary: Colors.blue[800]!,
             onTertiary: Colors.blueAccent[400]!,
             surface: Colors.lightBlue[50]!,
+            inverseSurface: Colors.black87,
           )),
       darkTheme: ThemeData(
         useMaterial3: true,
@@ -38,58 +48,11 @@ class MyApp extends StatelessWidget {
           onSecondary: Colors.blueGrey[100]!,
           onTertiary: Colors.blueAccent[200]!,
           surface: Colors.blueGrey[800]!,
+          inverseSurface: Colors.white70,
         ),
       ),
       themeMode: ThemeMode.system,
       home: const MyHomePage(),
-    );
-  }
-}
-
-class PuzzleSelector extends StatefulWidget {
-  const PuzzleSelector({super.key});
-
-  @override
-  State<PuzzleSelector> createState() => _PuzzleSelectorState();
-}
-
-class _PuzzleSelectorState extends State<PuzzleSelector> {
-  final List<bool> _selectedType = <bool>[true, false, false];
-  bool vertical = false;
-
-  String get selectedType {
-    if (_selectedType[0]) {
-      return "Soduko";
-    } else if (_selectedType[1]) {
-      return "Killer";
-    } else {
-      return "Futiski";
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ToggleButtons(
-      direction: vertical ? Axis.vertical : Axis.horizontal,
-      onPressed: (int index) {
-        setState(() {
-          for (int i = 0; i < _selectedType.length; i++) {
-            _selectedType[i] = i == index;
-          }
-        });
-      },
-      borderRadius: const BorderRadius.all(Radius.circular(8)),
-      borderColor: Theme.of(context).colorScheme.secondary,
-      selectedBorderColor: Theme.of(context).colorScheme.onPrimary,
-      selectedColor: Theme.of(context).colorScheme.onSecondary,
-      fillColor: Theme.of(context).colorScheme.primary,
-      color: Theme.of(context).colorScheme.onPrimary,
-      constraints: const BoxConstraints(
-        minHeight: 40.0,
-        minWidth: 80.0,
-      ),
-      isSelected: _selectedType,
-      children: const [Text("Soduko"), Text("Killer"), Text("Futiski")],
     );
   }
 }
@@ -102,13 +65,60 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  List<List<dynamic>> savedFileNames = [];
+
   Future<CameraViewer> _cameraBuilder() async {
     final cameras =
         await availableCameras(); // Get a specific camera from the list of available cameras.
     CameraDescription firstCamera = cameras.first;
     return CameraViewer(
       camera: firstCamera,
+      updateSaves: _refreshSavedFiles,
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    print("Loading saved files");
+    _loadSavedFiles();
+  }
+
+  Future<void> _loadSavedFiles() async {
+    savedFileNames = await _getSavedFiles();
+    print(savedFileNames);
+    setState(() {
+      //to trigger rebuild
+    });
+  }
+
+  void _refreshSavedFiles() {
+    _loadSavedFiles();
+  }
+
+  Future<List<List<dynamic>>> _getSavedFiles() async {
+    print("Getting saved files");
+    final Directory directory = await getApplicationDocumentsDirectory();
+
+    final File savesFile = File('${directory.path}/saves.json');
+    final String content = await savesFile.readAsString();
+    List<List<dynamic>> saveDetails = [];
+    try {
+      final Map<String, dynamic> saves = jsonDecode(content);
+      print("Retrieved");
+      saveDetails = saves.entries.map((entry) {
+        String name = entry.key;
+        String date = entry.value['time'];
+        date = date.substring(0, 11);
+        List<dynamic> originalGrid = entry.value['originalData'];
+        List<dynamic> solution = entry.value['solutionData'];
+        return [name, date, originalGrid, solution];
+      }).toList();
+      print("Saved files: $saveDetails");
+    } catch (e) {
+      print("Error reading saved files: $e");
+    }
+    return saveDetails;
   }
 
   final _selector = const PuzzleSelector();
@@ -125,41 +135,102 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         backgroundColor: Theme.of(context).colorScheme.background,
       ),
-      body: Center(
-        child: Column(
-          children: [
-            const SizedBox(
-              height: 15,
-            ),
-            _selector,
-            const SizedBox(
-              height: 15,
-            ),
-            Text(
-              'Take a picture of the puzzle to solve:',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSecondary,
-                fontSize: 14,
+      drawer: Drawer(
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        child: Builder(
+          builder: (context) => Column(
+            children: [
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                child: const Text(
+                  'Saved Puzzles',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(
-              height: 15,
-            ),
-            FutureBuilder<CameraViewer>(
-              future: _cameraBuilder(),
-              builder:
-                  (BuildContext context, AsyncSnapshot<CameraViewer> snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const CircularProgressIndicator(); // show loading spinner while waiting
-                } else if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}');
-                } else {
-                  return snapshot.data ??
-                      Container(); // show CameraViewer when data is available, otherwise return a placeholder widget
-                }
-              },
-            ),
-          ],
+              Expanded(
+                child: ListView.builder(
+                  itemCount: savedFileNames.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(
+                        savedFileNames[index][0],
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontSize: 18,
+                        ),
+                      ),
+                      subtitle: Text(
+                        savedFileNames[index][1],
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontSize: 14,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) {
+                              return DisplayPictureScreen(
+                                originalData: savedFileNames[index][2],
+                                responseData: savedFileNames[index][3],
+                                updateSaves: _refreshSavedFiles,
+                                newSave: false,
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Center(
+          child: Column(
+            children: [
+              const SizedBox(
+                height: 15,
+              ),
+              _selector,
+              const SizedBox(
+                height: 15,
+              ),
+              Text(
+                'Take a picture of the puzzle to solve:',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSecondary,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(
+                height: 15,
+              ),
+              FutureBuilder<CameraViewer>(
+                future: _cameraBuilder(),
+                builder: (BuildContext context,
+                    AsyncSnapshot<CameraViewer> snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircularProgressIndicator(); // show loading spinner while waiting
+                  } else if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  } else {
+                    return snapshot.data ??
+                        Container(); // show CameraViewer when data is available, otherwise return a placeholder widget
+                  }
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

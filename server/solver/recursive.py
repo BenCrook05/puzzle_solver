@@ -1,3 +1,4 @@
+import timeout_decorator
 
 def check_value_is_safe(value, row, column, grid):
     #check row
@@ -19,9 +20,8 @@ def check_value_is_safe(value, row, column, grid):
         return False
     return True
 
+
 def solve(grid):
-    # print("\n\n")
-    # print(grid)
     for i in range(9):
         for j in range(9):
             if grid[i][j] == 0:
@@ -36,3 +36,24 @@ def solve(grid):
                             grid[i][j] = 0
                 return False
     return True
+
+
+@timeout_decorator.timeout(6)
+def solve_puzzle(grid):
+    solved_grid = solve(grid)
+    return solved_grid
+
+
+grid = [[0, 0, 8, 7, 0, 0, 1, 0, 3],
+        [7, 0, 0, 0, 0, 9, 0, 0, 2],
+        [0, 0, 0, 0, 5, 0, 0, 7, 0],
+        [0, 8, 0, 0, 0, 0, 0, 0, 1],
+        [0, 0, 0, 0, 0, 0, 4, 0, 0],
+        [6, 7, 0, 0, 4, 5, 0, 0, 0],
+        [0, 0, 3, 0, 0, 7, 6, 2, 0],
+        [0, 0, 1, 0, 0, 0, 0, 5, 0],
+        [0, 5, 0, 3, 0, 2, 0, 0, 4],
+    ]
+
+solve(grid)
+print(grid)

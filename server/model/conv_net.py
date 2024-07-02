@@ -38,11 +38,11 @@ class BaseModel(nn.Module):
 
         
     @staticmethod
-    def save_model(model, path="/app/model/model.pth"):
+    def save_model(model, path="model/model.pth"):
         torch.save(model.state_dict(), path)
     
     @staticmethod
-    def load_model(path="/app/model/model.pth"):
+    def load_model(path="model/model.pth"):
         model = BaseModel()
         model.load_state_dict(torch.load(path))
         model.eval()  # Set the model to evaluation mode
