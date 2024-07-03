@@ -9,20 +9,22 @@ class DisplayPictureScreen extends StatefulWidget {
   final List<dynamic> originalData;
   final VoidCallback updateSaves;
   final bool newSave;
+  final String fileName;
 
   const DisplayPictureScreen(
       {super.key,
       required this.responseData,
       required this.originalData,
       required this.updateSaves,
-      required this.newSave});
+      required this.newSave,
+      required this.fileName});
 
   @override
   State<DisplayPictureScreen> createState() => _DisplayPictureScreenState();
 }
 
 class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
-  bool showAllValues = false;
+  late bool showAllValues = false;
   late List<bool> visibilityStates;
 
   @override
@@ -55,51 +57,58 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
           fontSize: 24,
           fontWeight: FontWeight.bold,
         ),
-        backgroundColor: Theme.of(context).colorScheme.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Theme.of(context).colorScheme.tertiary,
-            width: 2,
-          ),
-        ),
-        margin: const EdgeInsets.all(10),
-        child: AspectRatio(
-          aspectRatio: 1,
-          child: GridView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 9,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
+      body: Column(
+        children: [
+          const SizedBox(height: 20),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.tertiary,
+                width: 2,
+              ),
             ),
-            itemBuilder: (context, index_1) {
-              return Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.tertiary,
-                    width: 2,
-                  ),
+            margin: const EdgeInsets.all(10),
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: 9,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
                 ),
-                child: GridView.builder(
-                  itemCount: 9,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                  ),
-                  itemBuilder: (context, index_2) {
-                    return GridElementButton(
-                      value: widget.responseData[index_1 * 9 + index_2],
-                      originalValue: widget.originalData[index_1 * 9 + index_2],
-                      showValue: visibilityStates[index_1 * 9 + index_2],
-                      onToggleVisibility: () =>
-                          toggleElementVisibility(index_1 * 9 + index_2),
-                    );
-                  },
-                ),
-              );
-            },
+                itemBuilder: (context, index_1) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.tertiary,
+                        width: 2,
+                      ),
+                    ),
+                    child: GridView.builder(
+                      itemCount: 9,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                      ),
+                      itemBuilder: (context, index_2) {
+                        return GridElementButton(
+                          value: widget.responseData[index_1 * 9 + index_2],
+                          originalValue:
+                              widget.originalData[index_1 * 9 + index_2],
+                          showValue: visibilityStates[index_1 * 9 + index_2],
+                          onToggleVisibility: () =>
+                              toggleElementVisibility(index_1 * 9 + index_2),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
-        ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -155,19 +164,35 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
                 final directory = await getApplicationDocumentsDirectory();
                 final file = File('${directory.path}/saves.json');
                 if (await file.exists()) {
-                  await file.delete();
-                  // ignore: use_build_context_synchronously
-                  Navigator.of(dialogContext).pop();
-                  // ignore: use_build_context_synchronously
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(
-                      content: Text('Save deleted successfully'),
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                  // ignore: use_build_context_synchronously
-                  Navigator.of(dialogContext).pop();
-                  widget.updateSaves();
+                  Map<String, dynamic> fileData = {};
+                  try {
+                    String content = file.readAsStringSync();
+                    fileData = jsonDecode(content);
+                    fileData.remove(widget.fileName);
+                    file.writeAsStringSync(jsonEncode(fileData));
+                    widget.updateSaves();
+                    // ignore: use_build_context_synchronously
+                    Navigator.of(dialogContext).pop();
+                    // ignore: use_build_context_synchronously
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(
+                        content: Text('Save deleted successfully'),
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                    // ignore: use_build_context_synchronously
+                    Navigator.of(dialogContext).pop();
+                  } catch (e) {
+                    // ignore: use_build_context_synchronously
+                    Navigator.of(dialogContext).pop();
+                    // ignore: use_build_context_synchronously
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(
+                        content: Text('Error deleting save'),
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                  }
                 } else {
                   // ignore: use_build_context_synchronously
                   Navigator.of(dialogContext).pop();
@@ -262,6 +287,19 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
       }
     }
 
+    //check file name doesn't already exist, and amend if required
+    if (fileData.containsKey(fileName)) {
+      if (fileData.containsKey("${fileName}_1")) {
+        int i = 2;
+        while (fileData.containsKey("${fileName}_$i")) {
+          i++;
+        }
+        fileName = "${fileName}_$i";
+      } else {
+        fileName = "${fileName}_1";
+      }
+    }
+
     final data = {
       'originalData': widget.originalData,
       'solutionData': widget.responseData,
@@ -321,13 +359,13 @@ class _GridElementButtonState extends State<GridElementButton> {
       child: Center(
         child: ElevatedButton(
           style: ButtonStyle(
-            padding: MaterialStateProperty.all(EdgeInsets.zero),
-            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+            padding: WidgetStateProperty.all(EdgeInsets.zero),
+            shape: WidgetStateProperty.all<RoundedRectangleBorder>(
               const RoundedRectangleBorder(
                 borderRadius: BorderRadius.zero,
               ),
             ),
-            minimumSize: MaterialStateProperty.all(Size.zero),
+            minimumSize: WidgetStateProperty.all(Size.zero),
           ),
           onPressed: _onPressed,
           child: Center(

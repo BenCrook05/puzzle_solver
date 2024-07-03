@@ -45,6 +45,7 @@ class ApiResponseHandler extends StatelessWidget {
             } else if (responseFlag == "success") {
               var originalData = responseData["original_grid"];
               var solutionData = responseData["solution"];
+              // grids returned as 2d arrays of each box
               List<int> originalDataList = _convertGridToList(originalData);
               List<int> solutionDataList = _convertGridToList(solutionData);
               return DisplayPictureScreen(
@@ -52,6 +53,7 @@ class ApiResponseHandler extends StatelessWidget {
                 responseData: solutionDataList,
                 updateSaves: updateSaves,
                 newSave: true,
+                fileName: "",
               );
             } else {
               return AlertDialog(
@@ -68,7 +70,7 @@ class ApiResponseHandler extends StatelessWidget {
           } catch (e) {
             return AlertDialog(
               title: const Text("Error"),
-              content: const Text("Failed to parse data from server"),
+              content: Text("Failed to parse data from server: response: $e"),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),

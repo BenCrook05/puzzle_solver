@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
+
 class PuzzleSelector extends StatefulWidget {
-  const PuzzleSelector({super.key});
+  final VoidCallback changeView;
+  final Function(String) onTypeChange;
+  const PuzzleSelector(
+      {super.key, required this.changeView, required this.onTypeChange});
 
   @override
   State<PuzzleSelector> createState() => _PuzzleSelectorState();
@@ -29,6 +33,9 @@ class _PuzzleSelectorState extends State<PuzzleSelector> {
             _selectedType[i] = i == index;
           }
         });
+        widget.onTypeChange(selectedType);
+        print(selectedType);
+        widget.changeView();
       },
       borderRadius: const BorderRadius.all(Radius.circular(8)),
       borderColor: Theme.of(context).colorScheme.secondary,

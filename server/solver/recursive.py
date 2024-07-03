@@ -1,4 +1,5 @@
-import timeout_decorator
+import threading
+
 
 def check_value_is_safe(value, row, column, grid):
     #check row
@@ -38,22 +39,17 @@ def solve(grid):
     return True
 
 
-@timeout_decorator.timeout(6)
 def solve_puzzle(grid):
-    solved_grid = solve(grid)
-    return solved_grid
-
-
-grid = [[0, 0, 8, 7, 0, 0, 1, 0, 3],
-        [7, 0, 0, 0, 0, 9, 0, 0, 2],
-        [0, 0, 0, 0, 5, 0, 0, 7, 0],
-        [0, 8, 0, 0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0, 4, 0, 0],
-        [6, 7, 0, 0, 4, 5, 0, 0, 0],
-        [0, 0, 3, 0, 0, 7, 6, 2, 0],
-        [0, 0, 1, 0, 0, 0, 0, 5, 0],
-        [0, 5, 0, 3, 0, 2, 0, 0, 4],
-    ]
-
-solve(grid)
-print(grid)
+    
+    def solve_thread():
+        solve(grid)
+        
+    thread = threading.Thread(target=solve_thread)
+    thread.start()
+    thread.join(timeout=6)    
+    print(grid)
+    if thread.is_alive():
+        raise TimeoutError("Solving the puzzle took too long")
+    else:
+        return grid
+    

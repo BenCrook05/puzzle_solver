@@ -2,15 +2,16 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:camera/camera.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:async';
 
 import 'package:soduko_solver/cameraviewer.dart';
 import 'package:soduko_solver/gridviewdisplay.dart';
 import 'package:soduko_solver/typeselector.dart';
+import 'package:soduko_solver/manualentry.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,27 +28,25 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.light(
-            background: Colors.white,
             primary: Colors.blue[200]!,
             secondary: Colors.blue[300]!,
             tertiary: Colors.blueAccent[100]!,
             onPrimary: Colors.blue[700]!,
             onSecondary: Colors.blue[800]!,
             onTertiary: Colors.blueAccent[400]!,
-            surface: Colors.lightBlue[50]!,
+            surface: Colors.white,
             inverseSurface: Colors.black87,
           )),
       darkTheme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.dark(
-          background: Colors.blueGrey[900]!,
           primary: Colors.blueGrey[700]!,
           secondary: Colors.blueGrey[600]!,
           tertiary: Colors.blueAccent[700]!,
           onPrimary: Colors.blueGrey[50]!,
           onSecondary: Colors.blueGrey[100]!,
           onTertiary: Colors.blueAccent[200]!,
-          surface: Colors.blueGrey[800]!,
+          surface: Colors.blueGrey[900]!,
           inverseSurface: Colors.white70,
         ),
       ),
@@ -66,6 +65,10 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<List<dynamic>> savedFileNames = [];
+  late final PuzzleSelector _selector;
+  bool _selectorValueIsCamera = true;
+  late FutureBuilder<CameraViewer> cameraView;
+  late GridEntryTable gridView;
 
   Future<CameraViewer> _cameraBuilder() async {
     final cameras =
@@ -77,19 +80,63 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  Future<void> _saveViewPreference(bool isCamera) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('viewPreference', isCamera);
+  }
+
+  Future<bool> _getInitialViewPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('viewPreference') ?? true;
+  }
+
+  Future<void> _loadInitialViewPreference() async {
+    bool showCameraFirst = await _getInitialViewPreference();
+    setState(() {
+      _selectorValueIsCamera = showCameraFirst;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
-    print("Loading saved files");
     _loadSavedFiles();
+
+    _selector = PuzzleSelector(
+      changeView: _changeInputType,
+      onTypeChange: (type) {
+        setState(() {
+          _selectorValueIsCamera = type == "Camera";
+          _saveViewPreference(_selectorValueIsCamera);
+          print(_selectorValueIsCamera);
+        });
+      },
+    );
+    print(_selectorValueIsCamera);
+    _loadInitialViewPreference();
+
+    cameraView = FutureBuilder<CameraViewer>(
+      future: _cameraBuilder(),
+      builder: (BuildContext context, AsyncSnapshot<CameraViewer> snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator(); // show loading spinner while waiting
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else {
+          return snapshot.data ??
+              Container(); // show CameraViewer when data is available, otherwise return a placeholder widget
+        }
+      },
+    );
+    
+    gridView = GridEntryTable(
+      updateSaves: _refreshSavedFiles,
+    );
   }
 
   Future<void> _loadSavedFiles() async {
     savedFileNames = await _getSavedFiles();
-    print(savedFileNames);
-    setState(() {
-      //to trigger rebuild
-    });
+    setState(() {});
   }
 
   void _refreshSavedFiles() {
@@ -97,7 +144,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<List<List<dynamic>>> _getSavedFiles() async {
-    print("Getting saved files");
     final Directory directory = await getApplicationDocumentsDirectory();
 
     final File savesFile = File('${directory.path}/saves.json');
@@ -105,7 +151,6 @@ class _MyHomePageState extends State<MyHomePage> {
     List<List<dynamic>> saveDetails = [];
     try {
       final Map<String, dynamic> saves = jsonDecode(content);
-      print("Retrieved");
       saveDetails = saves.entries.map((entry) {
         String name = entry.key;
         String date = entry.value['time'];
@@ -114,14 +159,12 @@ class _MyHomePageState extends State<MyHomePage> {
         List<dynamic> solution = entry.value['solutionData'];
         return [name, date, originalGrid, solution];
       }).toList();
-      print("Saved files: $saveDetails");
+      saveDetails = saveDetails.reversed.toList();
     } catch (e) {
-      print("Error reading saved files: $e");
+      saveDetails = [];
     }
     return saveDetails;
   }
-
-  final _selector = const PuzzleSelector();
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +176,7 @@ class _MyHomePageState extends State<MyHomePage> {
           fontSize: 24,
           fontWeight: FontWeight.bold,
         ),
-        backgroundColor: Theme.of(context).colorScheme.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
       ),
       drawer: Drawer(
         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -181,6 +224,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 responseData: savedFileNames[index][3],
                                 updateSaves: _refreshSavedFiles,
                                 newSave: false,
+                                fileName: savedFileNames[index][0],
                               );
                             },
                           ),
@@ -206,7 +250,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 height: 15,
               ),
               Text(
-                'Take a picture of the puzzle to solve:',
+                _selectorValueIsCamera
+                    ? 'Enter sodoku values manually'
+                    : 'Take a picture of the puzzle to solve:',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSecondary,
                   fontSize: 14,
@@ -215,24 +261,17 @@ class _MyHomePageState extends State<MyHomePage> {
               const SizedBox(
                 height: 15,
               ),
-              FutureBuilder<CameraViewer>(
-                future: _cameraBuilder(),
-                builder: (BuildContext context,
-                    AsyncSnapshot<CameraViewer> snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const CircularProgressIndicator(); // show loading spinner while waiting
-                  } else if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  } else {
-                    return snapshot.data ??
-                        Container(); // show CameraViewer when data is available, otherwise return a placeholder widget
-                  }
-                },
-              ),
+              _selectorValueIsCamera ? gridView : cameraView,
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _changeInputType() {
+    setState(() {
+      _selectorValueIsCamera = !_selectorValueIsCamera;
+    });
   }
 }
