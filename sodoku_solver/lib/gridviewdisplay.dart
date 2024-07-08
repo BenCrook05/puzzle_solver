@@ -376,7 +376,7 @@ class _GridElementButtonState extends State<GridElementButton> {
                 color: widget.originalValue == 0
                     ? Theme.of(context).colorScheme.onPrimary
                     : Theme.of(context).colorScheme.inverseSurface,
-                fontSize: 20,
+                fontSize: 24,
               ),
             ),
           ),

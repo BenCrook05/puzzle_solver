@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-# from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt
 
 
 def preprocess_image(image):
@@ -17,7 +17,7 @@ def detect_gridlines(image, threshold=150):
     kernel = np.ones((5,5),np.uint8)
     edges = cv2.erode(edges,kernel,iterations = 1)
     lines = cv2.HoughLines(edges, 1, np.pi/180, 250, threshold)
-    # lines_predictive = cv2.HoughLinesP(edges, 1, np.pi/180, 100, minLineLength=300, maxLineGap=10)
+    # lines = cv2.HoughLinesP(edges, 1, np.pi/180, threshold=10, minLineLength=200)
     
     
     # #only want to consider lines present in both lines and lines_predictive
@@ -27,13 +27,33 @@ def detect_gridlines(image, threshold=150):
     
     grid_lines = []
     
-    #remove non-horizontal and non-vertical lines
+    #remove non-horizontal and non-vertical lines for HoughLines
     for line in lines:
         rho,theta = line[0]
         a = np.cos(theta)
         b = np.sin(theta)
         if abs(a) > 0.999 or abs(b) > 0.999:
             grid_lines.append(line)
+
+            
+    #calculate rho and theta for each line in HoughLinesP
+    # def calculate_rho_theta(x1, y1, x2, y2):
+    #     theta = np.arctan2((y2 - y1), (x2 - x1))
+    #     rho = (y2 - y1) * x1 - (x2 - x1) * y1
+    #     rho /= np.sqrt((y2 - y1)**2 + (x2 - x1)**2)
+    #     return rho, theta
+
+
+    
+    # for line in lines:
+    #     x1, y1, x2, y2 = line[0]
+    #     rho, theta = calculate_rho_theta(x1, y1, x2, y2)
+    #     a = np.cos(theta)
+    #     b = np.sin(theta)
+    #     if abs(a) > 0.999 or abs(b) > 0.999:
+    #         grid_lines.append([[rho, theta], 0])
+
+    
 
     RHO_THRESHOLD = 15
     THETA_THRESHOLD = 0.1
@@ -89,6 +109,13 @@ def detect_gridlines(image, threshold=150):
     
     #print("Proper lines: ", len(proper_lines))
     return proper_lines      
+        
+def plot_lines(image, lines):
+    for line in lines:
+        x1, y1, x2, y2 = line[0]
+        cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+    plt.imshow(image)
+    plt.show()
         
 
 def find_intersection(lines):
@@ -198,10 +225,7 @@ def crop_cells(image, intersections, grid_size):
         
         
         
-def plot_intersections(image, intersections):
-    # Load the image
-    # image = cv2.imread(image_path)
-    
+def plot_intersections(image, intersections):    
     # Convert image from BGR to RGB (matplotlib uses RGB)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     
@@ -210,21 +234,21 @@ def plot_intersections(image, intersections):
         cv2.drawMarker(image, (int(x), int(y)), color=(255, 0, 0), markerType=cv2.MARKER_SQUARE, markerSize=10)
         cv2.putText(image, str(idx), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
     # Display the image with matplotlib
-    # plt.imshow(image)
-    # plt.show()
+    plt.imshow(image)
+    plt.show()
         
     
 def get_cells_from_image_grid(image, grid_size):
     threshold_image = preprocess_image(image)
         
     lines = detect_gridlines(threshold_image)
-    #print("Lines detected: ", len(lines))
+    print("Lines detected: ", len(lines))
     
 
     intersections = find_intersection(lines)
-    #print("Intersections found: ", len(intersections))
+    print("Intersections found: ", len(intersections))
     
-    # plot_intersections(threshold_image, intersections)
+    plot_intersections(threshold_image, intersections)
     
     cells = crop_cells(image, intersections, grid_size+1)
     #print("Cells divided: ", len(cells))

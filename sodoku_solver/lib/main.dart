@@ -65,8 +65,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<List<dynamic>> savedFileNames = [];
-  late final PuzzleSelector _selector;
   bool _selectorValueIsCamera = true;
+  bool _initialSelectorValueIsCamera = true;
   late FutureBuilder<CameraViewer> cameraView;
   late GridEntryTable gridView;
 
@@ -93,7 +93,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _loadInitialViewPreference() async {
     bool showCameraFirst = await _getInitialViewPreference();
     setState(() {
-      _selectorValueIsCamera = showCameraFirst;
+      _initialSelectorValueIsCamera = showCameraFirst;
     });
   }
 
@@ -102,16 +102,6 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     _loadSavedFiles();
 
-    _selector = PuzzleSelector(
-      changeView: _changeInputType,
-      onTypeChange: (type) {
-        setState(() {
-          _selectorValueIsCamera = type == "Camera";
-          _saveViewPreference(_selectorValueIsCamera);
-          print(_selectorValueIsCamera);
-        });
-      },
-    );
     print(_selectorValueIsCamera);
     _loadInitialViewPreference();
 
@@ -128,7 +118,7 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       },
     );
-    
+
     gridView = GridEntryTable(
       updateSaves: _refreshSavedFiles,
     );
@@ -245,14 +235,22 @@ class _MyHomePageState extends State<MyHomePage> {
               const SizedBox(
                 height: 15,
               ),
-              _selector,
+              PuzzleEntrySelector(
+                originalSelectedTypeIsCamera: _initialSelectorValueIsCamera,
+                changeSelectedType: () {
+                  setState(() {
+                    _selectorValueIsCamera = !_selectorValueIsCamera;
+                    _saveViewPreference(_selectorValueIsCamera);
+                  });
+                },
+              ),
               const SizedBox(
                 height: 15,
               ),
               Text(
                 _selectorValueIsCamera
-                    ? 'Enter sodoku values manually'
-                    : 'Take a picture of the puzzle to solve:',
+                    ? 'Take a picture of the puzzle to solve:'
+                    : 'Enter sodoku values manually',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSecondary,
                   fontSize: 14,
@@ -261,17 +259,11 @@ class _MyHomePageState extends State<MyHomePage> {
               const SizedBox(
                 height: 15,
               ),
-              _selectorValueIsCamera ? gridView : cameraView,
+              _selectorValueIsCamera ? cameraView : gridView,
             ],
           ),
         ),
       ),
     );
-  }
-
-  void _changeInputType() {
-    setState(() {
-      _selectorValueIsCamera = !_selectorValueIsCamera;
-    });
   }
 }

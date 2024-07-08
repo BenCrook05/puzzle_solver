@@ -57,6 +57,11 @@ class _GridEntryTableState extends State<GridEntryTable> {
                         return TextField(
                           controller: _controllers[index_1 * 9 + index_2],
                           textAlign: TextAlign.center,
+                          textAlignVertical: TextAlignVertical.center,
+                          style: TextStyle( 
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 24,
+                          ),
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             border: OutlineInputBorder(
@@ -64,7 +69,9 @@ class _GridEntryTableState extends State<GridEntryTable> {
                                 color: Theme.of(context).colorScheme.tertiary,
                                 width: 2,
                               ),
+                              borderRadius: BorderRadius.zero,
                             ),
+                            contentPadding: const EdgeInsets.all(1),
                           ),
                           onChanged: (value) => setState(
                             () {

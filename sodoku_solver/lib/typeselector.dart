@@ -1,42 +1,29 @@
 import 'package:flutter/material.dart';
 
-
-class PuzzleSelector extends StatefulWidget {
-  final VoidCallback changeView;
-  final Function(String) onTypeChange;
-  const PuzzleSelector(
-      {super.key, required this.changeView, required this.onTypeChange});
+class PuzzleEntrySelector extends StatefulWidget {
+  final bool originalSelectedTypeIsCamera;
+  final VoidCallback changeSelectedType;
+  const PuzzleEntrySelector(
+      {super.key,
+      required this.originalSelectedTypeIsCamera,
+      required this.changeSelectedType});
 
   @override
-  State<PuzzleSelector> createState() => _PuzzleSelectorState();
+  State<PuzzleEntrySelector> createState() => _PuzzleEntrySelectorState();
 }
 
-class _PuzzleSelectorState extends State<PuzzleSelector> {
-  final List<bool> _selectedType = <bool>[true, false];
-  bool vertical = false;
+class _PuzzleEntrySelectorState extends State<PuzzleEntrySelector> {
+  late bool _currentSelectedTypeIsCamera;
 
-  String get selectedType {
-    if (_selectedType[0]) {
-      return "Camera";
-    } else {
-      return "Manual";
-    }
+  @override
+  void initState() {
+    super.initState();
+    _currentSelectedTypeIsCamera = widget.originalSelectedTypeIsCamera;
   }
 
   @override
   Widget build(BuildContext context) {
     return ToggleButtons(
-      direction: vertical ? Axis.vertical : Axis.horizontal,
-      onPressed: (int index) {
-        setState(() {
-          for (int i = 0; i < _selectedType.length; i++) {
-            _selectedType[i] = i == index;
-          }
-        });
-        widget.onTypeChange(selectedType);
-        print(selectedType);
-        widget.changeView();
-      },
       borderRadius: const BorderRadius.all(Radius.circular(8)),
       borderColor: Theme.of(context).colorScheme.secondary,
       selectedBorderColor: Theme.of(context).colorScheme.onPrimary,
@@ -47,8 +34,17 @@ class _PuzzleSelectorState extends State<PuzzleSelector> {
         minHeight: 40.0,
         minWidth: 80.0,
       ),
-      isSelected: _selectedType,
-      children: const [Text("Camera"), Text("Manual")],
+      onPressed: (int index) {
+        setState(() {
+          _currentSelectedTypeIsCamera = index == 0;
+          widget.changeSelectedType();
+        });
+      },
+      isSelected: [_currentSelectedTypeIsCamera, !_currentSelectedTypeIsCamera],
+      children: const [
+        Text("Camera"),
+        Text("Manual"),
+      ],
     );
   }
 }

@@ -5,13 +5,18 @@ import model_utils.preprocess as prepro
 from solver import recursive
 import traceback
 import copy
+import cv2
+import numpy as np
 app = Flask(__name__)
 
 @app.route('/', methods=['POST'])
 def endpoint():
     try:
         if 'image' in request.files:
-            image = request.files['image']
+            image_file = request.files['image']
+            image_data = np.fromstring(image_file.read(), np.uint8)
+            image = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
+            cv2.imwrite('image.jpg', image)  
             cell_images = prepro.get_cells_from_image_grid(image, 9)
             grid = []
             for row in cell_images:
