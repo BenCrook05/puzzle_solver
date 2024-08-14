@@ -90,15 +90,11 @@ class _CameraViewerState extends State<CameraViewer> {
                       // );
                       final size = screenWidth - 50;
                       return Center(
-                        child: FittedBox(
-                          fit: BoxFit.fitHeight,
-                          child: OverflowBox(
-                            maxHeight: size,
-                            maxWidth: size,
-                            alignment: Alignment.center,
-                            child: CameraPreview(_controller),
-                          ),
-                        ),
+                        child: SizedBox( 
+                          height: size,
+                          width: size,
+                          child: CameraPreview(_controller),
+                        )
                       );
                     } else {
                       return const Center(child: CircularProgressIndicator());
