@@ -1,3 +1,4 @@
+from server.solver import recursive
 from flask import Flask, request, jsonify
 import json
 import model.process_images as pro
@@ -9,69 +10,83 @@ import cv2
 import numpy as np
 app = Flask(__name__)
 
-@app.route('/', methods=['POST'])
-def endpoint():
-    try:
-        if 'image' in request.files:
-            image_file = request.files['image']
-            image_data = np.fromstring(image_file.read(), np.uint8)
-            image = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
-            cv2.imwrite('image.jpg', image)  
-            cell_images = prepro.get_cells_from_image_grid(image, 9)
-            grid = []
-            for row in cell_images:
-                row_values = []
-                for cell in row:
-                    value = pro.process_image(cell)
-                    row_values.append(value)
-                if len(row_values) != 9:
-                    return jsonify({'flag': 'error', 'message': 'image_processing_error'})
-                grid.append(row_values)
-                
-            grid = rows_to_boxes(grid)
-            
-            if len(grid) != 9:
-                return jsonify({'flag': 'error', 'message': 'image_processing_error'})
-            
-        elif request.form:
-            data = request.form
-            print("Data:")
-            print(data)
-            if 'grid' not in data:
-                return jsonify({'flag': 'error', 'message': 'missing_grid'})
-            print("Received grid data")
-            grid_str = data['grid']
-            print("Extracted grid data")
-            grid_data = json.loads(grid_str)
-            print("Loaded grid data")
-            grid = []
-            # convert 1d array into 2d array with 9 boxes
-            for i in range(0, 81, 9):
-                row = grid_data[i:i+9]
-                grid.append(row)
-            
-            grid = boxes_to_rows(grid)
+def extract_grid_from_image(image_file):
+    image_data = np.frombuffer(image_file.read(), np.uint8)
 
-        #make copy so we can compare original and solved grid
-        original_grid = copy.deepcopy(grid)
-        solved_grid = recursive.solve_puzzle(grid)
-        
-        print("Solved grid")
-        print(solved_grid)
-        
-        print("original grid")
-        print(original_grid)
-        
-        
-        original_grid = rows_to_boxes(original_grid)
-        solved_grid = rows_to_boxes(solved_grid)
-        
-        return jsonify({'flag': 'success', 'solution': solved_grid, 'original_grid': original_grid})
-                   
+    image = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
+    if image is None:
+        raise ValueError("Image is empty")
     
+    cv2.imwrite("image.jpg", image)
+    
+    cell_images = prepro.get_cells_from_image_grid(image, 9)
+
+    grid = []
+    for row in cell_images:
+        row_values = [pro.process_image(cell) for cell in row]
+        if len(row_values) != 9:
+            raise ValueError("Image processing error")
+        
+        grid.append(row_values)
+    if len(grid) != 9:
+        raise ValueError("Image processing error")
+    
+    return grid
+
+def extract_grid_from_manual(form_data):
+    if 'grid' not in form_data:
+        raise KeyError("Missing grid")
+    
+    grid_data = json.loads(form_data['grid'])
+
+    if len(grid_data) != 81:
+        raise ValueError("Invalid grid data")
+    
+    boxes = [grid_data[i:i+9] for i in range(0, 81, 9)]
+    return boxes_to_rows(boxes)
+
+def solve_format_responses(grid):
+    solved_grid = recursive.solve_puzzle(grid)
+
+    return jsonify({
+        "flag": "success",
+        'solution': rows_to_boxes(solved_grid),
+        'original_grid': rows_to_boxes(grid)
+    })
+
+
+@app.route('/solve/image', methods=['POST'])
+def solve_image_endpoint():
+    try:
+        if 'image' not in request.files:
+            return jsonify({'flag': 'error', 'message': 'missing_image'}), 400
+
+
+        grid = extract_grid_from_image(request.files['image'])
+        return solve_format_responses(grid)
     except Exception as e:
         print(traceback.format_exc())
-        return jsonify({'flag': 'error', 'message': str(e)})
+        return jsonify({'flag': 'error', 'message': str(e)}), 400
+
+@app.route('/solve/manual', methods=['POST'])
+def solve_manual_endpoint():
+    try:
+        grid = extract_grid_from_manual(request.form)
+        return solve_format_responses(grid)
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify({'flag': 'error', 'message': str(e)}), 400
+
+
+@app.route('/', methods=['POST'])
+def endpoint():
+    #keep old endpoint for testing 
+    if 'image' in request.files:
+        return solve_image_endpoint()
+    elif request.form:
+        return solve_manual_endpoint()
+    return jsonify({'flag': 'error', 'message': 'unsupported_request_format'}), 400
+
     
     
 def boxes_to_rows(boxes):
