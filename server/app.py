@@ -1,4 +1,3 @@
-from server.solver import recursive
 from flask import Flask, request, jsonify
 import json
 import model.process_images as pro
@@ -17,7 +16,7 @@ def extract_grid_from_image(image_file):
     if image is None:
         raise ValueError("Image is empty")
     
-    cv2.imwrite("image.jpg", image)
+    # cv2.imwrite("image.jpg", image)
     
     cell_images = prepro.get_cells_from_image_grid(image, 9)
 

@@ -135,35 +135,32 @@ class _CameraViewerState extends State<CameraViewer> {
                 await tempFile.writeAsBytes(croppedImageBytes);
 
                 if (!context.mounted) return;
-
+                
                 Future<String> apiRequestFuture = () async {
-                  var request = http.MultipartRequest(
-                      'POST', Uri.parse('http://10.0.2.2:5000'));
-                  request.files.add(await http.MultipartFile.fromPath(
-                      'image', tempFile.path));
-                  var res =
-                      await request.send().timeout(const Duration(seconds: 20));
+                  var request = http.MultipartRequest('POST', ApiConfig.solveImageUri);
+                  request.files.add(await http.MultipartFile.fromPath('image', tempFile.path));
+                  
+                  var res = await request.send().timeout(const Duration(seconds: 20));
                   var responseData = await http.Response.fromStream(res);
-                  if (responseData.statusCode != 200) {
-                    throw Exception('Failed to connect to server');
-                  } else {
+                  if (responseData.statusCode == 200 || responseData.statusCode == 400) {
                     return responseData.body;
+                  } else {
+                    throw Exception('Server returned HTTP ${responseData.statusCode}');
                   }
-                }()
-                    .timeout(const Duration(seconds: 15));
-
+                }().timeout(const Duration(seconds: 15));
                 await Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => FutureBuilder<String>(
-                        future: apiRequestFuture,
-                        builder: (context, snapshot) => ApiResponseHandler(
-                              apiRequestFuture: apiRequestFuture,
-                              updateSaves: widget.updateSaves,
-                            )),
+                    builder: (context) => ApiResponseHandler(
+                      apiRequestFuture: apiRequestFuture,
+                      updateSaves: widget.updateSaves,
+                    ),
                   ),
                 );
               } catch (e) {
-                return;
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Camera/Upload error: ${e.toString()}')),
+                );
               }
             },
             child: const Icon(Icons.camera_alt),

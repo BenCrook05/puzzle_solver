@@ -1,7 +1,4 @@
-from string import templatelib
-from _typeshed import _type_checker_internals
-from string import templatelib
-import threading
+
 
 
 def check_value_is_safe(value, row, column, grid):
@@ -43,30 +40,32 @@ def solve(grid):
                 return False
     return True
 
-def solve_tail(grid, empty_grid):
+def solve_tail(grid):
     for i in range(9):
         for j in range(9):
-            if empty_grid[i][j] == 0:
+            if grid[i][j] == 0:
                 for value in range(1,10):
                     
-                    if check_value_is_safe(value, i, j, empty_grid):
-                        empty_grid[i][j] = value
+                    if check_value_is_safe(value, i, j, grid):
+                        grid[i][j] = value
                         
-                        if solve_tail(grid, empty_grid):
+                        if solve_tail(grid):
                             return True
                         else:
-                            empty_grid[i][j] = 0
+                            grid[i][j] = 0
                 return False
     return True
 
 def check_valid(grid):
     #check that initial grid presented is valid. 
+    # doesn't mutate grid
     for i in range(9):
         for j in range(9):
             if grid[i][j] != 0:
                 val = grid[i][j]
                 grid[i][j] = 0
                 if not check_value_is_safe(val, i, j, grid):
+                    grid[i][j] = val
                     return False
                 grid[i][j] = val
     return True
@@ -74,13 +73,12 @@ def check_valid(grid):
 
 def solve_puzzle(grid):
     empty_grid = [[grid[i][j] for j in range(9)] for i in range(9)]
-
     if not check_valid(empty_grid):
         raise ValueError("Invalid Sudoku Grid")
     
 
-    if solve_tail(grid, empty_grid):
-        return empty_grid
+    if solve_tail(grid):
+        return grid
     
     raise Exception("No solution found")
     

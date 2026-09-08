@@ -15,6 +15,15 @@ class _GridEntryTableState extends State<GridEntryTable> {
   final List<TextEditingController> _controllers =
       List.generate(81, (index) => TextEditingController());
 
+
+  @override
+  void dispose() {
+    for (var controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -93,15 +102,46 @@ class _GridEntryTableState extends State<GridEntryTable> {
             padding: const EdgeInsets.all(5),
             alignment: Alignment.bottomRight,
             child: FloatingActionButton( 
-              onPressed: () {
-                for (var i = 0; i < 81; i++) {
-                  _controllers[i].clear();
+              onPressed: () async {
+                try {
+                  if (!context.mounted) return;
+                  Future<String> apiRequestFuture = () async {
+                    var request = http.MultipartRequest(
+                      'Post',
+                      ApiConfig.solveManualUri
+
+                    );
+                    List<int> gridData = [];
+                    for (var i = 0; i < 81; i++) {
+                      final text = _controllers[i].text.trim();
+                      gridData.add(int.tryParse(text) ?? 0);
+
+
+                    }
+                    request.fields['grid'] = gridData.toString();
+                    var res = await request.send().timeout(const Duration(seconds: 20));
+                    var responseData = await http.Response.fromStream(res);
+                    if (responseData.statusCode == 200 || responseData.statusCode == 400) {
+                      return responseData.body;
+                    } else {
+                      throw Exception('Server returned HTTP ${responseData.statusCode}');
+                    }
+                  }().timeout(const Duration(seconds: 15));
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ApiResponseHandler(
+                        apiRequestFuture: apiRequestFuture,
+                        updateSaves: widget.updateSaves,
+                      ),
+                    ),
+                  );
+                } catch (e) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: ${e.toString()}')),
+                  );
                 }
               },
-              shape: const CircleBorder(),
-              mini: true,
-              heroTag: 'clearGridButton',
-              child: const Icon(Icons.clear),
             ),
           ),
           const SizedBox(height: 15),
