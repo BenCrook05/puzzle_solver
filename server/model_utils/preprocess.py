@@ -233,9 +233,9 @@ def plot_intersections(image, intersections):
     for idx, (x, y) in enumerate(intersections):
         cv2.drawMarker(image, (int(x), int(y)), color=(255, 0, 0), markerType=cv2.MARKER_SQUARE, markerSize=10)
         cv2.putText(image, str(idx), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
-    # Display the image with matplotlib
-    plt.imshow(image)
-    plt.show()
+    # Display the image with matplotlib (not for deployment)
+    # plt.imshow(image)
+    # plt.show()
         
     
 def get_cells_from_image_grid(image, grid_size):
