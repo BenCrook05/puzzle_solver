@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch
+import os
 
 
 class Net(nn.Module):
@@ -38,13 +39,21 @@ class BaseModel(nn.Module):
 
         
     @staticmethod
-    def save_model(model, path="model/model.pth"):
+    def save_model(model, path=None):
+        if path is None:
+            path = os.path.join(os.path.dirname(__file__), "model.pth")
         torch.save(model.state_dict(), path)
     
     @staticmethod
-    def load_model(path="model/model.pth"):
+    def load_model(path=None, device=None):
+        if path is None:
+            path = os.path.join(os.path.dirname(__file__), "model.pth")
         model = BaseModel()
-        model.load_state_dict(torch.load(path))
+        if device is not None:
+            model.load_state_dict(torch.load(path, map_location=device))
+            model.to(device)
+        else:
+            model.load_state_dict(torch.load(path, map_location="cpu"))
         model.eval()  # Set the model to evaluation mode
         return model
     

@@ -2,6 +2,7 @@
 import torch
 import torch.nn as nn
 import torchvision.transforms.v2 as transforms
+import numpy as np
 
 from model.conv_net import BaseModel
 
@@ -9,13 +10,13 @@ from model.conv_net import BaseModel
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-model = BaseModel.load_model()
+model = BaseModel.load_model(device=device)
 
 
 IMAGE_HEIGHT = 20
 IMAGE_WIDTH = 20
 
-def process_image(image):
+def process_image(image: np.ndarray) -> int:
     print("Processing image")
     print(image.shape)
     preprocess_trans = transforms.Compose([

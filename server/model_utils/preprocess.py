@@ -26,6 +26,8 @@ def detect_gridlines(image, threshold=150):
     
     
     grid_lines = []
+    if lines is None:
+        return []
     
     #remove non-horizontal and non-vertical lines for HoughLines
     for line in lines:
@@ -171,6 +173,8 @@ def find_intersection(lines):
     return sorted_intersections
 
 def crop_cells(image, intersections, grid_size):
+    if len(intersections) != grid_size * grid_size:
+        raise ValueError("Could not detect Sudoku grid")
     #find grounps of 4 intersections
     cells = []
     for i in range(0, grid_size-1):
@@ -254,10 +258,10 @@ def get_cells_from_image_grid(image, grid_size):
     #print("Cells divided: ", len(cells))
     
     if len(cells) != grid_size:
-        raise ValueError()
+        raise ValueError("Could not extract cells from Sudoku grid")
     for row in cells:
         if len(row) != grid_size:
-            raise ValueError()
+            raise ValueError("Could not extract cells from Sudoku grid")
     
     return cells
     

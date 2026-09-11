@@ -72,13 +72,14 @@ def check_valid(grid):
 
 
 def solve_puzzle(grid):
-    empty_grid = [[grid[i][j] for j in range(9)] for i in range(9)]
-    if not check_valid(empty_grid):
+    # doesn't mutate original grid so original grid can be returned by api
+    grid_copy_to_solve = [[grid[i][j] for j in range(9)] for i in range(9)]
+    if not check_valid(grid_copy_to_solve):
         raise ValueError("Invalid Sudoku Grid")
     
 
-    if solve_tail(grid):
-        return grid
+    if solve_tail(grid_copy_to_solve):
+        return grid_copy_to_solve
     
     raise Exception("No solution found")
     

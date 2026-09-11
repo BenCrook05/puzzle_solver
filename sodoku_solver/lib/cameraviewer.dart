@@ -5,6 +5,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:soduko_solver/apiresponsehandler.dart';
 import 'dart:io';
 import 'package:image/image.dart' as img;
+import 'package:soduko_solver/apiconfig.dart';
+
 
 class CameraViewer extends StatefulWidget {
   final VoidCallback updateSaves;
@@ -135,7 +137,7 @@ class _CameraViewerState extends State<CameraViewer> {
                 await tempFile.writeAsBytes(croppedImageBytes);
 
                 if (!context.mounted) return;
-                
+
                 Future<String> apiRequestFuture = () async {
                   var request = http.MultipartRequest('POST', ApiConfig.solveImageUri);
                   request.files.add(await http.MultipartFile.fromPath('image', tempFile.path));

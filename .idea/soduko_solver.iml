@@ -33,8 +33,9 @@
       <excludeFolder url="file://$MODULE_DIR$/sodoku_solver/windows/flutter/ephemeral/.plugin_symlinks/path_provider_windows/example/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/sodoku_solver/windows/flutter/ephemeral/.plugin_symlinks/path_provider_windows/example/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/sodoku_solver/windows/flutter/ephemeral/.plugin_symlinks/path_provider_windows/example/build" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="Python 3.10 (puzzle_solver)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>
