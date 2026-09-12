@@ -144,51 +144,9 @@ class _GridEntryTableState extends State<GridEntryTable> {
                   );
                 }
               },
+              heroTag: 'manualEntrySubmit',
+              child: const Icon(Icons.upload),
             ),
-          ),
-          // const SizedBox(height: 15),
-          // FloatingActionButton(
-          //   onPressed: () async {
-          //     try {
-          //       if (!context.mounted) return;
-          //       Future<String> apiRequestFuture = () async {
-          //         var request = http.MultipartRequest(
-          //             'POST', Uri.parse('http://10.0.2.2:5000'));
-          //         List<int> gridData = [];
-          //         for (var i = 0; i < 81; i++) {
-          //           gridData.add(int.parse(_controllers[i].text.isEmpty
-          //               ? '0'
-          //               : _controllers[i].text));
-          //         }
-          //         request.fields['grid'] = gridData.toString();
-          //         var res =
-          //             await request.send().timeout(const Duration(seconds: 20));
-          //         var responseData = await http.Response.fromStream(res);
-          //         if (responseData.statusCode != 200) {
-          //           throw Exception('Failed to connect to server');
-          //         } else {
-          //           return responseData.body;
-          //         }
-          //       }()
-          //           .timeout(const Duration(seconds: 15));
-
-          //       await Navigator.of(context).push(
-          //         MaterialPageRoute(
-          //           builder: (context) => FutureBuilder<String>(
-          //             future: apiRequestFuture,
-          //             builder: (context, snapshot) => ApiResponseHandler(
-          //               apiRequestFuture: apiRequestFuture,
-          //               updateSaves: widget.updateSaves,
-          //             ),
-          //           ),
-          //         ),
-          //       );
-          //     } catch (e) {
-          //       return;
-          //     }
-          //   },
-            // heroTag: 'manualEntrySubmit',
-            child: const Icon(Icons.upload),
           ),
         ],
       ),

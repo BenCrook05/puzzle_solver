@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 
 class ApiConfig {
-  static const String _customHost = ''; 
+  static const String _customHost = '192.168.1.95';
   static String get baseUrl {
     if (_customHost.isNotEmpty) {
       return 'http://$_customHost:5000';
