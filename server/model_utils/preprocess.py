@@ -174,7 +174,7 @@ def find_intersection(lines):
 
 def crop_cells(image, intersections, grid_size):
     if len(intersections) != grid_size * grid_size:
-        raise ValueError("Could not detect Sudoku grid")
+        raise ValueError("Could not detect gridlines, try more consistent lighting")
     #find grounps of 4 intersections
     cells = []
     for i in range(0, grid_size-1):

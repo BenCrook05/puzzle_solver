@@ -116,6 +116,8 @@ def solve_puzzle(grid):
     # doesn't mutate original grid so original grid can be returned by api
     grid_copy_to_solve = [[grid[i][j] for j in range(9)] for i in range(9)]
     if not check_valid(grid_copy_to_solve):
+        for row in grid:
+            print(row)
         raise ValueError("Invalid Sudoku Grid")
 
 
