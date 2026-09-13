@@ -16,6 +16,18 @@ class ApiResponseHandler extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.done) {
           print("Response data:   ");
           print(snapshot.data);
+          if (snapshot.hasError) {
+            return AlertDialog(
+              title: const Text("Connection Error"),
+              content: Text("${snapshot.error}"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text("OK"),
+                ),
+              ],
+            );
+          }
           if (snapshot.data == null || snapshot.data!.isEmpty) {
             return AlertDialog(
               title: const Text("Error"),

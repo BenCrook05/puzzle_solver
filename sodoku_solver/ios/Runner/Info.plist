@@ -35,6 +35,12 @@
 	<string>Camera access is needed to capture and solve Sudoku puzzles.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Microphone access is not used directly, but required by the camera library.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Used to connect to the local Sudoku solver server on your Mac.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_http._tcp</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

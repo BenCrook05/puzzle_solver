@@ -25,6 +25,7 @@ class CameraViewer extends StatefulWidget {
 class _CameraViewerState extends State<CameraViewer> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
+  bool _isCapturing = false;
 
   @override
   void initState() {
@@ -33,11 +34,18 @@ class _CameraViewerState extends State<CameraViewer> {
     _controller = CameraController(
       // Get a specific camera from the list of available cameras.
       widget.camera,
-      ResolutionPreset.max,
+      ResolutionPreset.high,
       enableAudio: false,
     );
 
-    _initializeControllerFuture = _controller.initialize();
+    _initializeControllerFuture = _controller.initialize().then((_) async {
+      try {
+        await _controller.setFlashMode(FlashMode.always);
+      } catch (_) {}
+      try {
+        await _controller.setFocusMode(FocusMode.auto);
+      } catch (_) {}
+    });
   }
 
   @override
@@ -93,11 +101,36 @@ class _CameraViewerState extends State<CameraViewer> {
                       // );
                       final size = screenWidth - 50;
                       return Center(
-                        child: SizedBox( 
-                          height: size,
-                          width: size,
-                          child: CameraPreview(_controller),
-                        )
+                        child: GestureDetector(
+                          onTapUp: (details) async {
+                            try {
+                              final offset = Offset(
+                                details.localPosition.dx / size,
+                                details.localPosition.dy / size,
+                              );
+                              await _controller.setFocusPoint(offset);
+                              await _controller.setFocusMode(FocusMode.auto);
+                            } catch (_) {}
+                          },
+                          child: SizedBox(
+                            height: size,
+                            width: size,
+                            child: ClipRect(
+                              child: SizedOverflowBox(
+                                size: Size(size, size),
+                                alignment: Alignment.center,
+                                child: FittedBox(
+                                  fit: BoxFit.cover,
+                                  child: SizedBox(
+                                    width: _controller.value.previewSize?.height ?? size,
+                                    height: _controller.value.previewSize?.width ?? size,
+                                    child: CameraPreview(_controller),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       );
                     } else {
                       return const Center(child: CircularProgressIndicator());
@@ -109,64 +142,84 @@ class _CameraViewerState extends State<CameraViewer> {
           ),
           const SizedBox(height: 15),
           FloatingActionButton(
-            onPressed: () async {
-              try {
-                await _initializeControllerFuture;
+            onPressed: _isCapturing
+                ? null
+                : () async {
+                    setState(() {
+                      _isCapturing = true;
+                    });
+                    try {
+                      await _initializeControllerFuture;
 
-                final image = await _controller.takePicture();
-                // double controllerAspectRatio = _controller.value.aspectRatio;
+                      final image = await _controller.takePicture();
+                      // double controllerAspectRatio = _controller.value.aspectRatio;
 
-                final imageBytes = await File(image.path).readAsBytes();
-                final originalImage = img.decodeImage(imageBytes)!;
+                      final imageBytes = await File(image.path).readAsBytes();
+                      final originalImage = img.decodeImage(imageBytes)!;
 
-                final length = originalImage.width < originalImage.height
-                    ? originalImage.width
-                    : originalImage.height;
+                      final length = originalImage.width < originalImage.height
+                          ? originalImage.width
+                          : originalImage.height;
 
-                final croppedImage = img.copyCrop(
-                  originalImage,
-                  x: (originalImage.width - length) ~/ 2,
-                  y: (originalImage.height - length) ~/ 2,
-                  width: length,
-                  height: length,
-                );
+                      final croppedImage = img.copyCrop(
+                        originalImage,
+                        x: (originalImage.width - length) ~/ 2,
+                        y: (originalImage.height - length) ~/ 2,
+                        width: length,
+                        height: length,
+                      );
 
-                final croppedImageBytes = img.encodeJpg(croppedImage);
+                      final croppedImageBytes = img.encodeJpg(croppedImage);
 
-                final tempDir = await getTemporaryDirectory();
-                final tempFile = File('${tempDir.path}/temp_cropped_image.jpg');
-                await tempFile.writeAsBytes(croppedImageBytes);
+                      final tempDir = await getTemporaryDirectory();
+                      final tempFile = File('${tempDir.path}/temp_cropped_image.jpg');
+                      await tempFile.writeAsBytes(croppedImageBytes);
 
-                if (!context.mounted) return;
+                      if (!context.mounted) return;
 
-                Future<String> apiRequestFuture = () async {
-                  var request = http.MultipartRequest('POST', ApiConfig.solveImageUri);
-                  request.files.add(await http.MultipartFile.fromPath('image', tempFile.path));
-                  
-                  var res = await request.send().timeout(const Duration(seconds: 20));
-                  var responseData = await http.Response.fromStream(res);
-                  if (responseData.statusCode == 200 || responseData.statusCode == 400) {
-                    return responseData.body;
-                  } else {
-                    throw Exception('Server returned HTTP ${responseData.statusCode}');
-                  }
-                }().timeout(const Duration(seconds: 15));
-                await Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => ApiResponseHandler(
-                      apiRequestFuture: apiRequestFuture,
-                      updateSaves: widget.updateSaves,
+                      Future<String> apiRequestFuture = () async {
+                        var request = http.MultipartRequest('POST', ApiConfig.solveImageUri);
+                        request.files.add(await http.MultipartFile.fromPath('image', tempFile.path));
+                        
+                        var res = await request.send().timeout(const Duration(seconds: 20));
+                        var responseData = await http.Response.fromStream(res);
+                        if (responseData.statusCode == 200 || responseData.statusCode == 400) {
+                          return responseData.body;
+                        } else {
+                          throw Exception('Server returned HTTP ${responseData.statusCode}');
+                        }
+                      }().timeout(const Duration(seconds: 15));
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ApiResponseHandler(
+                            apiRequestFuture: apiRequestFuture,
+                            updateSaves: widget.updateSaves,
+                          ),
+                        ),
+                      );
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Camera/Upload error: ${e.toString()}')),
+                      );
+                    } finally {
+                      if (mounted) {
+                        setState(() {
+                          _isCapturing = false;
+                        });
+                      }
+                    }
+                  },
+            child: _isCapturing
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
                     ),
-                  ),
-                );
-              } catch (e) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Camera/Upload error: ${e.toString()}')),
-                );
-              }
-            },
-            child: const Icon(Icons.camera_alt),
+                  )
+                : const Icon(Icons.camera_alt),
           ),
         ],
       ),
