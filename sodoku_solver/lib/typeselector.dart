@@ -1,25 +1,14 @@
 import 'package:flutter/material.dart';
 
-class PuzzleEntrySelector extends StatefulWidget {
-  final bool originalSelectedTypeIsCamera;
-  final VoidCallback changeSelectedType;
-  const PuzzleEntrySelector(
-      {super.key,
-      required this.originalSelectedTypeIsCamera,
-      required this.changeSelectedType});
+class PuzzleEntrySelector extends StatelessWidget {
+  final bool isCamera;
+  final ValueChanged<bool> onChanged;
 
-  @override
-  State<PuzzleEntrySelector> createState() => _PuzzleEntrySelectorState();
-}
-
-class _PuzzleEntrySelectorState extends State<PuzzleEntrySelector> {
-  late bool _currentSelectedTypeIsCamera;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentSelectedTypeIsCamera = widget.originalSelectedTypeIsCamera;
-  }
+  const PuzzleEntrySelector({
+    super.key,
+    required this.isCamera,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,12 +24,9 @@ class _PuzzleEntrySelectorState extends State<PuzzleEntrySelector> {
         minWidth: 80.0,
       ),
       onPressed: (int index) {
-        setState(() {
-          _currentSelectedTypeIsCamera = index == 0;
-          widget.changeSelectedType();
-        });
+        onChanged(index == 0);
       },
-      isSelected: [_currentSelectedTypeIsCamera, !_currentSelectedTypeIsCamera],
+      isSelected: [isCamera, !isCamera],
       children: const [
         Text("Camera"),
         Text("Manual"),

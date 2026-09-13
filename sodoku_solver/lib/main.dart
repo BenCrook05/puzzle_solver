@@ -66,7 +66,6 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   List<List<dynamic>> savedFileNames = [];
   bool _selectorValueIsCamera = true;
-  bool _initialSelectorValueIsCamera = true;
   late FutureBuilder<CameraViewer> cameraView;
   late GridEntryTable gridView;
 
@@ -92,9 +91,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _loadInitialViewPreference() async {
     bool showCameraFirst = await _getInitialViewPreference();
-    setState(() {
-      _initialSelectorValueIsCamera = showCameraFirst;
-    });
+    if (mounted) {
+      setState(() {
+        _selectorValueIsCamera = showCameraFirst;
+      });
+    }
   }
 
   @override
@@ -236,12 +237,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 height: 15,
               ),
               PuzzleEntrySelector(
-                originalSelectedTypeIsCamera: _initialSelectorValueIsCamera,
-                changeSelectedType: () {
-                  setState(() {
-                    _selectorValueIsCamera = !_selectorValueIsCamera;
-                    _saveViewPreference(_selectorValueIsCamera);
-                  });
+                isCamera: _selectorValueIsCamera,
+                onChanged: (bool isCamera) {
+                  if (_selectorValueIsCamera != isCamera) {
+                    setState(() {
+                      _selectorValueIsCamera = isCamera;
+                      _saveViewPreference(isCamera);
+                    });
+                  }
                 },
               ),
               const SizedBox(
@@ -259,7 +262,13 @@ class _MyHomePageState extends State<MyHomePage> {
               const SizedBox(
                 height: 15,
               ),
-              _selectorValueIsCamera ? cameraView : gridView,
+              IndexedStack(
+                index: _selectorValueIsCamera ? 0 : 1,
+                children: [
+                  cameraView,
+                  gridView,
+                ],
+              ),
             ],
           ),
         ),
