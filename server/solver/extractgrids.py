@@ -39,8 +39,8 @@ class Extract:
         if len(grid_data) != 81:
             raise ValueError("Invalid grid data")
 
-        boxes = [grid_data[i: i +9] for i in range(0, 81, 9)]
-        return boxes_to_rows(boxes)
+        boxes = [grid_data[i: i + 9] for i in range(0, 81, 9)]
+        return Extract.boxes_to_rows(boxes)
 
     @staticmethod
     def boxes_to_rows(boxes):
