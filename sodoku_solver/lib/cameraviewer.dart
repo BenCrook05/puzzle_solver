@@ -221,6 +221,8 @@ class _CameraViewerState extends State<CameraViewer> with WidgetsBindingObserver
                         await _controller.pausePreview();
                       } catch (_) {}
 
+                      if (!context.mounted) return;
+
                       await Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => ApiResponseHandler(
