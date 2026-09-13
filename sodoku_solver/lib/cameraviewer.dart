@@ -217,6 +217,10 @@ class _CameraViewerState extends State<CameraViewer> with WidgetsBindingObserver
                           throw Exception('Server returned HTTP ${responseData.statusCode}');
                         }
                       }().timeout(const Duration(seconds: 15));
+                      try {
+                        await _controller.pausePreview();
+                      } catch (_) {}
+
                       await Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => ApiResponseHandler(
@@ -225,6 +229,10 @@ class _CameraViewerState extends State<CameraViewer> with WidgetsBindingObserver
                           ),
                         ),
                       );
+
+                      try {
+                        await _controller.resumePreview();
+                      } catch (_) {}
                     } catch (e) {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
