@@ -56,6 +56,7 @@ def solve_format_responses(grid):
 
 @app.route('/solve/image', methods=['POST'])
 def solve_image_endpoint():
+    print("Solving image entry")
     try:
         if 'image' not in request.files:
             return jsonify({'flag': 'error', 'message': 'missing_image'}), 400
@@ -69,6 +70,7 @@ def solve_image_endpoint():
 
 @app.route('/solve/manual', methods=['POST'])
 def solve_manual_endpoint():
+    print("Solving manual entry")
     try:
         grid = extract_grid_from_manual(request.form)
         return solve_format_responses(grid)
@@ -79,6 +81,7 @@ def solve_manual_endpoint():
 
 @app.route('/', methods=['POST'])
 def endpoint():
+    print("Solving general old entry")
     #keep old endpoint for testing 
     if 'image' in request.files:
         return solve_image_endpoint()

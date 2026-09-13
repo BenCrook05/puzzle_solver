@@ -34,6 +34,7 @@ class _CameraViewerState extends State<CameraViewer> {
       // Get a specific camera from the list of available cameras.
       widget.camera,
       ResolutionPreset.max,
+      enableAudio: false,
     );
 
     _initializeControllerFuture = _controller.initialize();
