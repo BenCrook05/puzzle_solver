@@ -22,7 +22,7 @@ class CameraViewer extends StatefulWidget {
   State<CameraViewer> createState() => _CameraViewerState();
 }
 
-class _CameraViewerState extends State<CameraViewer> {
+class _CameraViewerState extends State<CameraViewer> with WidgetsBindingObserver {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
   bool _isCapturing = false;
@@ -30,6 +30,7 @@ class _CameraViewerState extends State<CameraViewer> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     _controller = CameraController(
       // Get a specific camera from the list of available cameras.
@@ -49,9 +50,57 @@ class _CameraViewerState extends State<CameraViewer> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_controller.value.isInitialized) {
+      return;
+    }
+
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      _controller.pausePreview();
+    } else if (state == AppLifecycleState.resumed) {
+      _controller.resumePreview();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<String> _cropAndResizeImage(String sourcePath) async {
+    final file = File(sourcePath);
+    final imageBytes = await file.readAsBytes();
+    final originalImage = img.decodeImage(imageBytes);
+    if (originalImage == null) {
+      throw Exception("Failed to decode image");
+    }
+
+    final length = originalImage.width < originalImage.height
+        ? originalImage.width
+        : originalImage.height;
+
+    final croppedImage = img.copyCrop(
+      originalImage,
+      x: (originalImage.width - length) ~/ 2,
+      y: (originalImage.height - length) ~/ 2,
+      width: length,
+      height: length,
+    );
+
+    final resizedImage = img.copyResize(croppedImage, width: 800, height: 800);
+    final croppedImageBytes = img.encodeJpg(resizedImage, quality: 85);
+
+    final tempDir = await getTemporaryDirectory();
+    final tempFile = File('${tempDir.path}/temp_cropped_image.jpg');
+    await tempFile.writeAsBytes(croppedImageBytes);
+
+    try {
+      await file.delete();
+    } catch (_) {}
+
+    return tempFile.path;
   }
 
   @override
@@ -152,34 +201,13 @@ class _CameraViewerState extends State<CameraViewer> {
                       await _initializeControllerFuture;
 
                       final image = await _controller.takePicture();
-                      // double controllerAspectRatio = _controller.value.aspectRatio;
-
-                      final imageBytes = await File(image.path).readAsBytes();
-                      final originalImage = img.decodeImage(imageBytes)!;
-
-                      final length = originalImage.width < originalImage.height
-                          ? originalImage.width
-                          : originalImage.height;
-
-                      final croppedImage = img.copyCrop(
-                        originalImage,
-                        x: (originalImage.width - length) ~/ 2,
-                        y: (originalImage.height - length) ~/ 2,
-                        width: length,
-                        height: length,
-                      );
-
-                      final croppedImageBytes = img.encodeJpg(croppedImage);
-
-                      final tempDir = await getTemporaryDirectory();
-                      final tempFile = File('${tempDir.path}/temp_cropped_image.jpg');
-                      await tempFile.writeAsBytes(croppedImageBytes);
+                      final croppedPath = await _cropAndResizeImage(image.path);
 
                       if (!context.mounted) return;
 
                       Future<String> apiRequestFuture = () async {
                         var request = http.MultipartRequest('POST', ApiConfig.solveImageUri);
-                        request.files.add(await http.MultipartFile.fromPath('image', tempFile.path));
+                        request.files.add(await http.MultipartFile.fromPath('image', croppedPath));
                         
                         var res = await request.send().timeout(const Duration(seconds: 20));
                         var responseData = await http.Response.fromStream(res);
