@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 
 class ApiConfig {
-  static const String _customHost = '192.168.1.80'; // standard, currently for local network
+  static const String _customHost = '172.20.10.5'; // standard, currently for local network or hotspot
   static String get baseUrl {
     if (_customHost.isNotEmpty) {
       return 'http://$_customHost:5000';
@@ -12,9 +12,9 @@ class ApiConfig {
       return 'http://localhost:5000';
     }
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:5000'; // Android emulator
+      return 'http://10.0.2.2:5000'; // android
     }
-    return 'http://127.0.0.1:5000'; // iOS Simulator / macOS
+    return 'http://127.0.0.1:5000'; // ios simulator
   }
   static Uri get solveImageUri => Uri.parse('$baseUrl/solve/image');
   static Uri get solveManualUri => Uri.parse('$baseUrl/solve/manual');

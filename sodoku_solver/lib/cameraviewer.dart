@@ -26,6 +26,7 @@ class _CameraViewerState extends State<CameraViewer> with WidgetsBindingObserver
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
   bool _isCapturing = false;
+  bool _isFlashOn = false;
 
   @override
   void initState() {
@@ -41,12 +42,23 @@ class _CameraViewerState extends State<CameraViewer> with WidgetsBindingObserver
 
     _initializeControllerFuture = _controller.initialize().then((_) async {
       try {
-        await _controller.setFlashMode(FlashMode.always);
+        await _controller.setFlashMode(FlashMode.off);
       } catch (_) {}
       try {
         await _controller.setFocusMode(FocusMode.auto);
       } catch (_) {}
     });
+  }
+
+  Future<void> _toggleFlash() async {
+    if (!_controller.value.isInitialized) return;
+    try {
+      final nextState = !_isFlashOn;
+      await _controller.setFlashMode(nextState ? FlashMode.always : FlashMode.off);
+      setState(() {
+        _isFlashOn = nextState;
+      });
+    } catch (_) {}
   }
 
   @override
@@ -190,74 +202,87 @@ class _CameraViewerState extends State<CameraViewer> with WidgetsBindingObserver
             ),
           ),
           const SizedBox(height: 15),
-          FloatingActionButton(
-            onPressed: _isCapturing
-                ? null
-                : () async {
-                    setState(() {
-                      _isCapturing = true;
-                    });
-                    try {
-                      await _initializeControllerFuture;
-
-                      final image = await _controller.takePicture();
-                      final croppedPath = await _cropAndResizeImage(image.path);
-
-                      if (!context.mounted) return;
-
-                      Future<String> apiRequestFuture = () async {
-                        var request = http.MultipartRequest('POST', ApiConfig.solveImageUri);
-                        request.files.add(await http.MultipartFile.fromPath('image', croppedPath));
-                        
-                        var res = await request.send().timeout(const Duration(seconds: 20));
-                        var responseData = await http.Response.fromStream(res);
-                        if (responseData.statusCode == 200 || responseData.statusCode == 400) {
-                          return responseData.body;
-                        } else {
-                          throw Exception('Server returned HTTP ${responseData.statusCode}');
-                        }
-                      }().timeout(const Duration(seconds: 15));
-                      try {
-                        await _controller.pausePreview();
-                      } catch (_) {}
-
-                      if (!context.mounted) return;
-
-                      await Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => ApiResponseHandler(
-                            apiRequestFuture: apiRequestFuture,
-                            updateSaves: widget.updateSaves,
-                          ),
-                        ),
-                      );
-
-                      try {
-                        await _controller.resumePreview();
-                      } catch (_) {}
-                    } catch (e) {
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Camera/Upload error: ${e.toString()}')),
-                      );
-                    } finally {
-                      if (mounted) {
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(width: 56),
+              FloatingActionButton(
+                heroTag: 'cameraCapture',
+                onPressed: _isCapturing
+                    ? null
+                    : () async {
                         setState(() {
-                          _isCapturing = false;
+                          _isCapturing = true;
                         });
-                      }
-                    }
-                  },
-            child: _isCapturing
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2.5,
-                    ),
-                  )
-                : const Icon(Icons.camera_alt),
+                        try {
+                          await _initializeControllerFuture;
+
+                          final image = await _controller.takePicture();
+                          final croppedPath = await _cropAndResizeImage(image.path);
+
+                          if (!context.mounted) return;
+
+                          Future<String> apiRequestFuture = () async {
+                            var request = http.MultipartRequest('POST', ApiConfig.solveImageUri);
+                            request.files.add(await http.MultipartFile.fromPath('image', croppedPath));
+                            
+                            var res = await request.send().timeout(const Duration(seconds: 20));
+                            var responseData = await http.Response.fromStream(res);
+                            if (responseData.statusCode == 200 || responseData.statusCode == 400) {
+                              return responseData.body;
+                            } else {
+                              throw Exception('Server returned HTTP ${responseData.statusCode}');
+                            }
+                          }().timeout(const Duration(seconds: 15));
+                          try {
+                            await _controller.pausePreview();
+                          } catch (_) {}
+
+                          if (!context.mounted) return;
+
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => ApiResponseHandler(
+                                apiRequestFuture: apiRequestFuture,
+                                updateSaves: widget.updateSaves,
+                              ),
+                            ),
+                          );
+
+                          try {
+                            await _controller.resumePreview();
+                          } catch (_) {}
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Camera/Upload error: ${e.toString()}')),
+                          );
+                        } finally {
+                          if (mounted) {
+                            setState(() {
+                              _isCapturing = false;
+                            });
+                          }
+                        }
+                      },
+                child: _isCapturing
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                    : const Icon(Icons.camera_alt),
+              ),
+              const SizedBox(width: 16),
+              FloatingActionButton.small(
+                heroTag: 'cameraFlashToggle',
+                onPressed: _toggleFlash,
+                child: Icon(_isFlashOn ? Icons.flash_on : Icons.flash_off),
+              ),
+            ],
           ),
         ],
       ),
