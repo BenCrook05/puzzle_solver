@@ -123,11 +123,11 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
   }
 
   void toggleElementVisibility(int index) {
-    setState(() {
-      if (widget.originalData[index] == 0) {
+    if (widget.originalData[index] == 0) {
+      setState(() {
         visibilityStates[index] = !visibilityStates[index];
-      }
-    });
+      });
+    }
   }
 
   void _updateVisibilityStates() {
@@ -311,15 +311,11 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
   }
 }
 
-class GridElementButton extends StatefulWidget {
+class GridElementButton extends StatelessWidget {
   final int value;
   final int originalValue;
   final bool showValue;
   final VoidCallback onToggleVisibility;
-  // final bool topBorder;
-  // final bool bottomBorder;
-  // final bool leftBorder;
-  // final bool rightBorder;
 
   const GridElementButton({
     super.key,
@@ -327,24 +323,7 @@ class GridElementButton extends StatefulWidget {
     required this.originalValue,
     required this.showValue,
     required this.onToggleVisibility,
-    // required this.topBorder,
-    // required this.bottomBorder,
-    // required this.leftBorder,
-    // required this.rightBorder
   });
-
-  @override
-  State<GridElementButton> createState() => _GridElementButtonState();
-}
-
-class _GridElementButtonState extends State<GridElementButton> {
-  late bool showValue;
-
-  @override
-  void initState() {
-    super.initState();
-    showValue = widget.showValue;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -356,24 +335,16 @@ class _GridElementButtonState extends State<GridElementButton> {
         ),
         borderRadius: BorderRadius.zero,
       ),
-      child: Center(
-        child: ElevatedButton(
-          style: ButtonStyle(
-            padding: WidgetStateProperty.all(EdgeInsets.zero),
-            shape: WidgetStateProperty.all<RoundedRectangleBorder>(
-              const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-              ),
-            ),
-            minimumSize: WidgetStateProperty.all(Size.zero),
-          ),
-          onPressed: _onPressed,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onToggleVisibility,
           child: Center(
             child: Text(
-              _getValue(),
+              showValue ? value.toString() : '',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: widget.originalValue == 0
+                color: originalValue == 0
                     ? Theme.of(context).colorScheme.onPrimary
                     : Theme.of(context).colorScheme.inverseSurface,
                 fontSize: 24,
@@ -383,17 +354,5 @@ class _GridElementButtonState extends State<GridElementButton> {
         ),
       ),
     );
-  }
-
-  String _getValue() {
-    if (widget.showValue) {
-      return widget.value.toString();
-    } else {
-      return '';
-    }
-  }
-
-  void _onPressed() {
-    widget.onToggleVisibility();
   }
 }

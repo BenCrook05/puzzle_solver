@@ -17,47 +17,31 @@ class ApiResponseHandler extends StatelessWidget {
           print("Response data:   ");
           print(snapshot.data);
           if (snapshot.hasError) {
-            return AlertDialog(
-              title: const Text("Connection Error"),
-              content: Text("${snapshot.error}"),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text("OK"),
-                ),
-              ],
+            return _buildErrorScaffold(
+              context,
+              "Connection Error",
+              "${snapshot.error}",
             );
           }
           if (snapshot.data == null || snapshot.data!.isEmpty) {
-            return AlertDialog(
-              title: const Text("Error"),
-              content: const Text("No data received from the server."),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text("OK"),
-                ),
-              ],
+            return _buildErrorScaffold(
+              context,
+              "Error",
+              "No data received from the server.",
             );
           }
           try {
             var responseData = jsonDecode(snapshot.data ?? '');
             String responseFlag = responseData["flag"];
             if (responseFlag == "error") {
-              return AlertDialog(
-                title: const Text("Error"),
-                content: Text(responseData["message"]),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text("OK"),
-                  ),
-                ],
+              return _buildErrorScaffold(
+                context,
+                "Error",
+                responseData["message"] ?? "An error occurred",
               );
             } else if (responseFlag == "success") {
               var originalData = responseData["original_grid"];
               var solutionData = responseData["solution"];
-              // grids returned as 2d arrays of each box
               List<int> originalDataList = _convertGridToList(originalData);
               List<int> solutionDataList = _convertGridToList(solutionData);
               return DisplayPictureScreen(
@@ -68,33 +52,72 @@ class ApiResponseHandler extends StatelessWidget {
                 fileName: "",
               );
             } else {
-              return AlertDialog(
-                title: const Text("Error"),
-                content: const Text("Unknown error"),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text("OK"),
-                  ),
-                ],
+              return _buildErrorScaffold(
+                context,
+                "Error",
+                "Unknown error",
               );
             }
           } catch (e) {
-            return AlertDialog(
-              title: const Text("Error"),
-              content: Text("Failed to parse data from server: response: $e"),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text("OK"),
-                ),
-              ],
+            return _buildErrorScaffold(
+              context,
+              "Error",
+              "Failed to parse data from server: response: $e",
             );
           }
         } else {
-          return const Center(child: CircularProgressIndicator());
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text("Solving..."),
+              titleTextStyle: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+              backgroundColor: Theme.of(context).colorScheme.surface,
+            ),
+            body: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 20),
+                  Text(
+                    "Analyzing and solving...",
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
       },
+    );
+  }
+
+  Widget _buildErrorScaffold(BuildContext context, String title, String message) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        titleTextStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onPrimary,
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+        ),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+      ),
+      body: Center(
+        child: AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("OK"),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
