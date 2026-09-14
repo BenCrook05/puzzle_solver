@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torchvision.transforms.v2 as transforms
 import numpy as np
+import cv2
 
 from model.conv_net import BaseModel
 
@@ -17,6 +18,13 @@ IMAGE_HEIGHT = 20
 IMAGE_WIDTH = 20
 
 def process_image(image: np.ndarray) -> int:
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape) == 3 and image.shape[2] == 3 else image
+    h, w = gray.shape
+    center = gray[int(h * 0.2):int(h * 0.8), int(w * 0.2):int(w * 0.8)]
+    bg_thresh = np.percentile(center, 75) - 40
+    if (center < bg_thresh).sum() < 15:
+        return 0  # cell is empty as no central dark pixels
+
     print("Processing image")
     print(image.shape)
     preprocess_trans = transforms.Compose([
