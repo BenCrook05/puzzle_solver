@@ -140,7 +140,7 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
   Future<void> deleteSave(BuildContext context) async {
     return showDialog<void>(
       context: context,
-      barrierDismissible: false, // User must tap button!
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Save'),
@@ -218,7 +218,7 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
 
     return showDialog<void>(
       context: context,
-      barrierDismissible: false, // User must tap button!
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Save Solution'),
@@ -250,7 +250,6 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
                   BuildContext dialogContext = context;
                   await _saveDataToFile(fileName);
                   if (mounted) {
-                    // safe to use because mounted
                     // ignore: use_build_context_synchronously
                     Navigator.of(dialogContext).pop();
                     widget.updateSaves();

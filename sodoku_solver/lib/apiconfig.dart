@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 
 
 class ApiConfig {
-  static const String _customHost = '172.20.10.5'; // standard, currently for local network or hotspot
+//   static const String _customHost = '172.20.10.5'; // standard, currently for local network or hotspot
+static const String _customHost = '10.9.110.21'; // for marshall wace guest network
   static String get baseUrl {
     if (_customHost.isNotEmpty) {
       return 'http://$_customHost:5000';

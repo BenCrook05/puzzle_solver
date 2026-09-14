@@ -73,8 +73,7 @@ def solve_mrv(grid):
         grid[r][c] = val
         if solve_mrv(grid):
             return True
-        grid[r][
-            c] = 0  # triggers backtrack
+        grid[r][c] = 0
 
     return False
 

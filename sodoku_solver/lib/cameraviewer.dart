@@ -171,7 +171,7 @@ class _CameraViewerState extends State<CameraViewer> with WidgetsBindingObserver
                               );
                               await _controller.setFocusPoint(offset);
                               await _controller.setFocusMode(FocusMode.auto);
-                            } catch (_) {}
+                            } catch (e) {} // should do something with the catches
                           },
                           child: SizedBox(
                             height: size,
