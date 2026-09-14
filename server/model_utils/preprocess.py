@@ -9,9 +9,9 @@ def preprocess_image(image):
     return grey
 
 
-def detect_gridlines(image, threshold=150):
+def detect_gridlines(image, threshold=50):
     
-    edges = cv2.Canny(image, threshold, threshold*2, apertureSize=3)
+    edges = cv2.Canny(image, threshold, threshold*3, apertureSize=3)
     kernel = np.ones((3,3),np.uint8)
     edges = cv2.dilate(edges,kernel,iterations = 2)
     kernel = np.ones((5,5),np.uint8)
@@ -34,7 +34,7 @@ def detect_gridlines(image, threshold=150):
         rho,theta = line[0]
         a = np.cos(theta)
         b = np.sin(theta)
-        if abs(a) > 0.999 or abs(b) > 0.999:
+        if abs(a) > 0.97 or abs(b) > 0.97:
             grid_lines.append(line)
 
             

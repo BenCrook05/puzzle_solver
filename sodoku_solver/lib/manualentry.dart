@@ -58,6 +58,7 @@ class _GridEntryTableState extends State<GridEntryTable> {
                       ),
                     ),
                     child: GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
                       itemCount: 9,
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(

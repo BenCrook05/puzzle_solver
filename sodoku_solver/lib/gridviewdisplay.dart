@@ -87,6 +87,7 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
                       ),
                     ),
                     child: GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
                       itemCount: 9,
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
