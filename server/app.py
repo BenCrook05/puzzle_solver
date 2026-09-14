@@ -23,10 +23,14 @@ def solve_image_endpoint():
     print("Solving image entry")
     try:
         if 'image' not in request.files:
-            return jsonify({'flag': 'error', 'message': 'missing_image'}), 400
+            return jsonify({'flag': 'error', 'message': 'Could not read image from request. Please try again or use Manual Entry.'}), 400
 
+        try:
+            grid = Extract.extract_grid_from_image(request.files['image'])
+        except Exception:
+            print(traceback.format_exc())
+            return jsonify({'flag': 'error', 'message': 'Could not recognize the Sudoku grid from the photo. Please check lighting and camera alignment, or try Manual Entry.'}), 400
 
-        grid = Extract.extract_grid_from_image(request.files['image'])
         return solve_format_responses(grid)
     except Exception as e:
         print(traceback.format_exc())

@@ -118,7 +118,7 @@ def solve_puzzle(grid):
     if not check_valid(grid_copy_to_solve):
         for row in grid:
             print(row)
-        raise ValueError("Invalid Sudoku Grid")
+        raise ValueError("This puzzle breaks Sudoku rules (duplicate numbers in the same row, column, or 3x3 box).")
 
 
 
@@ -129,5 +129,5 @@ def solve_puzzle(grid):
 
 
     
-    raise Exception("No solution found")
+    raise ValueError("This Sudoku puzzle is unsolvable. Please check that the clues are correct.")
     
