@@ -34,10 +34,19 @@ class ApiResponseHandler extends StatelessWidget {
             var responseData = jsonDecode(snapshot.data ?? '');
             String responseFlag = responseData["flag"];
             if (responseFlag == "error") {
+              String msg = responseData["message"] ?? "An error occurred";
+              String title = "Error";
+              if (msg.contains("breaks Sudoku rules") || msg.contains("violates")) {
+                title = "Rule Violation";
+              } else if (msg.contains("unsolvable")) {
+                title = "Unsolvable Puzzle";
+              } else if (msg.contains("recognize") || msg.contains("Manual Entry")) {
+                title = "Recognition Error";
+              }
               return _buildErrorScaffold(
                 context,
-                "Error",
-                responseData["message"] ?? "An error occurred",
+                title,
+                msg,
               );
             } else if (responseFlag == "success") {
               var originalData = responseData["original_grid"];

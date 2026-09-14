@@ -129,5 +129,5 @@ def solve_puzzle(grid):
 
 
     
-    raise ValueError("This Sudoku puzzle is unsolvable. Please check that the clues are correct.")
+    raise ValueError("This Sudoku puzzle is unsolvable. Please check that digits are correct.")
     
